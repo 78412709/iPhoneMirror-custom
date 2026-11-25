@@ -476,6 +476,37 @@ internal sealed partial class MainViewModel : INotifyPropertyChanged
 
     public bool CanRestoreMainWindowFromTray => _closeToTrayActive;
 
+    public bool KeepPhoneAudioInUsbMode
+    {
+        get => Application.Current is App app &&
+            app.UpdateSettings.KeepPhoneAudioInUsbMode;
+        set
+        {
+            if (Application.Current is not App app ||
+                app.UpdateSettings.KeepPhoneAudioInUsbMode == value) return;
+            var previous = app.UpdateSettings.KeepPhoneAudioInUsbMode;
+            app.UpdateSettings.KeepPhoneAudioInUsbMode = value;
+            if (!app.SaveUpdateSettings())
+            {
+                app.UpdateSettings.KeepPhoneAudioInUsbMode = previous;
+                OnPropertyChanged();
+                return;
+            }
+            ApplyKeepPhoneAudioEnvironment();
+            OnPropertyChanged();
+        }
+    }
+
+    // 原生核心在每次 USB QuickTime 会话开始时读取该环境变量，
+    // 因此更改只影响下一次开始投屏，不影响正在进行的会话。
+    private static void ApplyKeepPhoneAudioEnvironment()
+    {
+        var enabled = Application.Current is App app &&
+            app.UpdateSettings.KeepPhoneAudioInUsbMode;
+        Environment.SetEnvironmentVariable("IPHONEMIRROR_KEEP_PHONE_AUDIO",
+            enabled ? "1" : null);
+    }
+
     internal void EnterTrayOnMainWindowClose()
     {
         if (IsTrayApplicationMode) return;
@@ -1437,6 +1468,7 @@ internal sealed partial class MainViewModel : INotifyPropertyChanged
             _appliedBluetoothLandscapeMouseDirection = _bluetoothLandscapeMouseDirection;
             _appliedBluetoothMouseReverseHorizontal = _bluetoothMouseReverseHorizontal;
             _appliedBluetoothMouseReverseVertical = _bluetoothMouseReverseVertical;
+            ApplyKeepPhoneAudioEnvironment();
         }
         _core = new NativeCore();
         _captureStatusReader = _core.GetDeviceSessionStatus;

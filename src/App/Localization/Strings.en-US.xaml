@@ -577,6 +577,8 @@
     <system:String x:Key="UsbModeAirPlayLabel">B AirPlay (experimental)</system:String>
     <system:String x:Key="UsbModeAisiLabel">C Aisi mode</system:String>
     <system:String x:Key="UsbProjectionPerDeviceHint">Applies only to the currently selected USB device.</system:String>
+    <system:String x:Key="KeepPhoneAudioUsb">Keep audio on iPhone (USB mirroring)</system:String>
+    <system:String x:Key="KeepPhoneAudioUsbHelp">Capture only the video over USB and leave the iPhone audio route untouched. Sound continues on the iPhone speaker or the Bluetooth headphones connected to the phone. Takes effect the next time mirroring starts; recording, streaming and the virtual camera will not contain phone audio.</system:String>
     <system:String x:Key="UsbModeDetailsToolTip">View this mode's advantages and disadvantages</system:String>
     <system:String x:Key="UsbModeDetailsTitle">USB mirroring mode details</system:String>
     <system:String x:Key="UsbModeAdvantageTitle">Advantages</system:String>

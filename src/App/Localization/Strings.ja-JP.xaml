@@ -577,6 +577,8 @@
     <system:String x:Key="UsbModeAirPlayLabel">B AirPlay（実験的）</system:String>
     <system:String x:Key="UsbModeAisiLabel">C Aisiモード</system:String>
     <system:String x:Key="UsbProjectionPerDeviceHint">現在選択しているUSBデバイスにだけ適用されます。</system:String>
+    <system:String x:Key="KeepPhoneAudioUsb">iPhoneの音声を保持（USBミラーリング）</system:String>
+    <system:String x:Key="KeepPhoneAudioUsbHelp">USBでは映像だけを取得し、iPhoneの音声出力を変更しません。音声はiPhoneのスピーカー、またはiPhoneに接続したBluetoothヘッドホンから再生され続けます。次回のミラーリング開始時に反映されます。録画、配信、仮想カメラにはiPhoneの音声が含まれません。</system:String>
     <system:String x:Key="UsbModeDetailsToolTip">このモードの長所と短所を表示します</system:String>
     <system:String x:Key="UsbModeDetailsTitle">USBミラーリングモードの詳細</system:String>
     <system:String x:Key="UsbModeAdvantageTitle">長所</system:String>

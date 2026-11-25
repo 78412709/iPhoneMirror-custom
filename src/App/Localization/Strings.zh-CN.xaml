@@ -577,6 +577,8 @@
     <system:String x:Key="UsbModeAirPlayLabel">B AirPlay（实验）</system:String>
     <system:String x:Key="UsbModeAisiLabel">C 爱思模式</system:String>
     <system:String x:Key="UsbProjectionPerDeviceHint">仅应用于当前选中的有线设备。</system:String>
+    <system:String x:Key="KeepPhoneAudioUsb">保留手机音频（USB 投屏）</system:String>
+    <system:String x:Key="KeepPhoneAudioUsbHelp">USB 投屏时只采集画面，不接管 iPhone 音频。声音继续从手机扬声器或手机连接的蓝牙耳机播放。更改后在下次开始投屏时生效；录制、推流和虚拟摄像头将没有手机声音。</system:String>
     <system:String x:Key="UsbModeDetailsToolTip">查看该模式的优缺点</system:String>
     <system:String x:Key="UsbModeDetailsTitle">有线投屏模式说明</system:String>
     <system:String x:Key="UsbModeAdvantageTitle">优点</system:String>

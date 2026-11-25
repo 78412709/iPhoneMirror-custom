@@ -27,6 +27,7 @@
 #include <exception>
 #include <format>
 #include <functional>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <semaphore>
@@ -37,6 +38,17 @@
 
 namespace iPhoneMirror::capture {
 namespace {
+
+// USB 仅画面模式：托管层在创建采集会话前把用户设置同步到
+// IPHONEMIRROR_KEEP_PHONE_AUDIO。开启后 QuickTime 会话不发送 HPA1，
+// iPhone 保持自身音频路由（扬声器或手机蓝牙耳机），视频仍通过 FEED 传输。
+bool keep_phone_audio_requested() noexcept {
+    wchar_t value[8]{};
+    const auto length = GetEnvironmentVariableW(
+        L"IPHONEMIRROR_KEEP_PHONE_AUDIO", value,
+        static_cast<DWORD>(std::size(value)));
+    return length == 1 && value[0] == L'1';
+}
 
 std::binary_semaphore usb_transition_gate{1};
 // Guards the try_begin/end_usb_device_discovery pairing so end() never
@@ -1285,6 +1297,7 @@ void CaptureSession::run(std::stop_token stop_token) noexcept {
     });
     quicktime::StreamDecoder decoder;
     const bool tablet = product_type_.starts_with(L"iPad");
+    const bool keep_phone_audio = keep_phone_audio_requested();
     // Start with ordinary B options. Enable native presentation only after
     // the read-only system-direction service is ready on the active USB mux.
     constexpr bool native_airplay_available = false;
@@ -1298,9 +1311,14 @@ void CaptureSession::run(std::stop_token stop_token) noexcept {
             native_airplay_available, tablet, diagnostic_display);
     auto session_options = display_configuration.session_options;
     const bool adaptive_display = display_configuration.adaptive_reconfiguration;
-    // Always negotiate the audio stream. The playback toggle is deliberately
-    // local so it can be switched on again without restarting USB/QuickTime.
-    session_options.request_audio = true;
+    // The playback toggle is deliberately local so it can be switched on
+    // again without restarting USB/QuickTime. 保留手机音频则必须在协商阶段
+    // 跳过 HPA1，因此每个会话开始时读取一次。
+    session_options.request_audio = !keep_phone_audio;
+    logging::write(std::format(
+        "usb_audio_mode={} request_audio={}",
+        keep_phone_audio ? "phone-local" : "windows",
+        session_options.request_audio));
     if (preferences_.usb_projection_mode == UsbProjectionMode::AirPlay &&
         preferences_.usb_requested_width != 0 && preferences_.usb_requested_height != 0) {
         logging::write(std::format("advanced_usb_request={}x{}",
@@ -1736,7 +1754,7 @@ void CaptureSession::run(std::stop_token stop_token) noexcept {
             session_options = make_usb_display_configuration(preferences_.usb_projection_mode,
                 native.width, native.height, preferences_.usb_requested_width,
                 preferences_.usb_requested_height, true, true, diagnostic_display).session_options;
-            session_options.request_audio = true;
+            session_options.request_audio = !keep_phone_audio;
             protocol = quicktime::SessionProtocol(session_options);
             native_airplay_active.store(true, std::memory_order_release);
             logging::write("usb_projection native_airplay=true h264_444=true orientation=springboard");

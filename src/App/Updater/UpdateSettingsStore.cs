@@ -42,6 +42,9 @@ internal sealed class UpdateSettings
     public ApplicationDisplayMode ApplicationDisplayMode { get; set; } =
         ApplicationDisplayMode.Complete;
     public bool CloseMainWindowToTray { get; set; }
+    // USB 投屏时把 iPhone 音频留在手机端（扬声器或手机蓝牙耳机），
+    // 原生核心通过 IPHONEMIRROR_KEEP_PHONE_AUDIO 读取。
+    public bool KeepPhoneAudioInUsbMode { get; set; }
     public bool HideInterfaceDescriptions { get; set; } = true;
     public bool HidePreviewToolbar { get; set; }
     public bool HidePreviewStatusBar { get; set; }
@@ -140,6 +143,7 @@ internal sealed class UpdateSettings
         Theme = Theme,
         ApplicationDisplayMode = ApplicationDisplayMode,
         CloseMainWindowToTray = CloseMainWindowToTray,
+        KeepPhoneAudioInUsbMode = KeepPhoneAudioInUsbMode,
         HideInterfaceDescriptions = HideInterfaceDescriptions,
         HidePreviewToolbar = HidePreviewToolbar,
         HidePreviewStatusBar = HidePreviewStatusBar,
