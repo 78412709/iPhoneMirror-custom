@@ -5,7 +5,11 @@ namespace IPhoneMirror.App;
 
 public partial class MainWindow
 {
-    private readonly HashSet<(string Device, byte Button)> _mouseShortcutButtons = [];
+    // 值为该次按下被受理的时间（TickCount64），用于识别丢失松开后残留的记录。
+    private readonly Dictionary<(string Device, byte Button), long> _mouseShortcutButtons = [];
+    // 同一次物理点击的重复通知会在几毫秒内到达。鼠标不会在没有松开的情况下
+    // 再次按下，所以超过该间隔的第二次按下说明中间的松开丢失了。
+    private const long MouseShortcutDuplicateWindowMs = 250;
     private readonly SemaphoreSlim _systemShortcutGate = new(1, 1);
 
     private bool CanSendDockShortcut(string? target)
@@ -28,20 +32,41 @@ public partial class MainWindow
         var identity = (udid?.ToUpperInvariant() ?? string.Empty, e.Button);
         if (e.Kind == PreviewPointerKind.Reset)
         {
-            _mouseShortcutButtons.RemoveWhere(item => item.Device == identity.Item1);
+            foreach (var key in _mouseShortcutButtons.Keys.Where(item => item.Device == identity.Item1).ToArray())
+                _mouseShortcutButtons.Remove(key);
             return false;
         }
         if (e.Kind == PreviewPointerKind.ButtonUp)
             return _mouseShortcutButtons.Remove(identity) || sideButton;
         if (e.Kind != PreviewPointerKind.ButtonDown ||
             !CanForwardControlKeyboard(udid, GetControlKeyboardWindow(udid))) return sideButton;
-        if (_mouseShortcutButtons.Contains(identity)) return true;
+        var now = Environment.TickCount64;
+        if (_mouseShortcutButtons.TryGetValue(identity, out var pressedAt))
+        {
+            if (now - pressedAt <= MouseShortcutDuplicateWindowMs) return true;
+            // 上一次点击的松开没有送达（焦点切换、窗口路由变化等），残留记录
+            // 会把这次真实的新点击当成重复按下吞掉。清除残留后按新点击处理。
+            _mouseShortcutButtons.Remove(identity);
+            if (MouseShortcutVirtualKey(e.Button) is int virtualKey)
+                _keyboardRouter.ReleaseMouseShortcut(virtualKey);
+            DiagnosticLogger.ReverseControl("keyboard_input", "mouse_shortcut_stale_press_recovered",
+                ("button", e.Button), ("held_ms", now - pressedAt));
+        }
         if (!TryHandleMouseShortcut(e.Button)) return sideButton;
         // Swallow the matching release even if the user releases Ctrl/Alt
         // first. Otherwise a navigation click can release an unrelated touch.
-        _mouseShortcutButtons.Add(identity);
+        _mouseShortcutButtons[identity] = now;
         return true;
     }
+
+    private static int? MouseShortcutVirtualKey(byte button) => button switch
+    {
+        2 => (int)KeyboardShortcut.MouseRight,
+        4 => (int)KeyboardShortcut.MouseMiddle,
+        8 => (int)KeyboardShortcut.MouseXButton1,
+        16 => (int)KeyboardShortcut.MouseXButton2,
+        _ => null,
+    };
 
     private SemaphoreSlim KeyboardSessionGate(DirectKeyboardRoute route) =>
         _viewModel.DeviceInput.KeyboardGate(route);

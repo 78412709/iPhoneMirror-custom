@@ -7935,6 +7935,15 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     {
         void Skipped(string reason) => DiagnosticLogger.ReverseControl("keyboard_input", "system_shortcut_skipped",
             ("action", action.ToString()), ("reason", reason));
+        if (_keyboardRouter.Mode == KeyboardInputMode.None &&
+            _keyboardRouter.RequestedMode != KeyboardInputMode.None)
+        {
+            // 焦点切换、反控开关或进出键位映射时，键盘所有权会短暂处于交接
+            // 状态。等交接完成（最多 400ms）再判断，避免这期间的点击被直接丢弃。
+            await Task.WhenAny(_keyboardHandoff, Task.Delay(400));
+            DiagnosticLogger.ReverseControl("keyboard_input", "system_shortcut_waited_handoff",
+                ("action", action.ToString()), ("ready", _keyboardRouter.Mode != KeyboardInputMode.None));
+        }
         if (_keyboardRouter.Mode == KeyboardInputMode.None) { Skipped("owner_none"); return; }
         if (!IsControlKeyboardForeground) { Skipped("focus_or_input_guard"); return; }
         var target = _activeControlWindow != 0 ? _activeControlUdid :
